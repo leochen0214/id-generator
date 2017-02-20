@@ -28,7 +28,7 @@ public class IdGeneratorTestRestController {
 
 
   @RequestMapping("/gen")
-  public List<Long> gen(@RequestParam(required = false) Integer size) {
+  public String gen(@RequestParam(required = false) Integer size) {
     if (size == null || size <= 0) {
       size = 5;
     }
@@ -39,7 +39,7 @@ public class IdGeneratorTestRestController {
 //    List<DefaultExplainResult> explainResults = orderIds.stream().map(id->IdExplainUtils.explain(id, defaultIdDistribution))
 //        .collect(toList());
 
-    return orderIds;
+    return "orderIds=" + orderIds;
   }
 
   private List<Long> generateIds(IdGenerator idGenerator, int size) {
