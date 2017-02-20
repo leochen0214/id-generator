@@ -8,8 +8,8 @@ import java.time.ZonedDateTime;
  * @date: 2017-02-18
  *
  * ----------   --------------  -------------------  ------------------  -----------------
- * Sign(1bit)     Version(3bit)   Time(29bit)         Sharding(12bit)     Sequence(19bit) ----------
- * --------------  -------------------  ------------------  -----------------
+ * Sign(1bit)     Version(3bit)   Time(29bit)         Sharding(12bit)     Sequence(19bit)
+ * ----------   --------------  -------------------  ------------------  -----------------
  */
 
 public class DefaultIdDistribution implements IdDistribution {
