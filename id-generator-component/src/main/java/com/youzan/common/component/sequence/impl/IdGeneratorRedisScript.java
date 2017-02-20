@@ -87,11 +87,4 @@ public class IdGeneratorRedisScript implements RedisScript<List<Long>> {
   }
 
 
-  public static void main(String[] args) {
-    RedisScript<List<Long>> r1 = new IdGeneratorRedisScript();
-    RedisScript<List<Long>> r2 = new IdGeneratorRedisScript();
-    System.out.println(r1.getSha1());
-    System.out.println(r2.getSha1());
-
-  }
 }
