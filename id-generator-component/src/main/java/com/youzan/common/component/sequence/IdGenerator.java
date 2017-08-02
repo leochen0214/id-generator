@@ -12,7 +12,7 @@ public interface IdGenerator {
    * @param version    版本号
    * @param shardingId 分片id
    */
-  long nextId(int version, int shardingId);
+  long nextId(int version, int shardingId) throws Exception;
 
 
 }
