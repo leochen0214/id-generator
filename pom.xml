@@ -14,7 +14,7 @@
     <groupId>com.youzan</groupId>
     <artifactId>id-generator</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.1-RELEASE</version>
+    <version>1.0.2-RELEASE</version>
 
     <modules>
         <module>id-generator-web</module>

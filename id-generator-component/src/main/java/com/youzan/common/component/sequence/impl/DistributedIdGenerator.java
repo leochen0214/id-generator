@@ -5,6 +5,9 @@ import com.youzan.common.component.sequence.RedisResponse;
 import com.youzan.common.component.sequence.exception.ExceedMaxSequenceException;
 import com.youzan.common.component.sequence.exception.SequenceException;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -14,7 +17,7 @@ import org.springframework.data.redis.core.script.RedisScript;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 分布式id实现，id有5段组成
@@ -30,8 +33,12 @@ public class DistributedIdGenerator implements IdGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(DistributedIdGenerator.class);
 
+  //guava cache配置
+  private static long CACHE_SIZE = 10000; // 默认缓存数量
+  private static long CACHE_EXPIRE = 3; // 缓存过期时间
 
-  private static final int DEFAULT_BATCH_SIZE = 1000;
+  private static final int DEFAULT_BATCH_SIZE = 1000;//按批次取每次取的数量
+
   private static RedisScript<List<Long>> redisScript = new IdGeneratorRedisScript();
 
 
@@ -39,6 +46,12 @@ public class DistributedIdGenerator implements IdGenerator {
   private final int batchSize;
   private final StringRedisTemplate stringRedisTemplate;
   private final IdDistribution idDistribution;
+
+  private Cache<String, RedisResponse> batchSequencesCache =
+      CacheBuilder.newBuilder()
+          .maximumSize(CACHE_SIZE) // maximum records can be cached
+          .expireAfterAccess(CACHE_EXPIRE, TimeUnit.SECONDS) // cache expire time
+          .build();
 
 
   public DistributedIdGenerator(RedisConnectionFactory connectionFactory,
@@ -63,22 +76,13 @@ public class DistributedIdGenerator implements IdGenerator {
   }
 
 
-
-
-  private final ConcurrentHashMap<String, RedisResponse> batchSequences = new ConcurrentHashMap<>();
-
-
   @Override
   public long nextId(int version, int shardingId) {
     String namespaceOfCurrentSeconds = namespace + Instant.now().getEpochSecond();
-    batchSequences.computeIfAbsent(namespaceOfCurrentSeconds,
-                                   k -> nextBatchValue(version, shardingId, batchSize));
-    RedisResponse currentBatch = batchSequences.get(namespaceOfCurrentSeconds);
-
-    if (currentBatch.currentBatchSequenceAreUsed()) {
-      batchSequences.computeIfPresent(namespaceOfCurrentSeconds,
-                                      (k, v) -> nextBatchValue(version, shardingId, batchSize));
-      currentBatch = batchSequences.get(namespaceOfCurrentSeconds);
+    RedisResponse currentBatch = batchSequencesCache.getIfPresent(namespaceOfCurrentSeconds);
+    if (currentBatch == null || currentBatch.currentBatchSequenceAreUsed()) {
+      currentBatch = nextBatchValue(version, shardingId, batchSize);
+      batchSequencesCache.put(namespaceOfCurrentSeconds, currentBatch);//会覆盖已有的键值
     }
 
     long sequence = currentBatch.takeOne();
