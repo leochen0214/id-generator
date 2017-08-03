@@ -5,9 +5,8 @@ import com.youzan.common.component.sequence.RedisResponse;
 import com.youzan.common.component.sequence.exception.ExceedMaxSequenceException;
 import com.youzan.common.component.sequence.exception.SequenceException;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,6 @@ import org.springframework.data.redis.core.script.RedisScript;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,10 +34,10 @@ public class DistributedIdGenerator implements IdGenerator {
   private static final Logger logger = LoggerFactory.getLogger(DistributedIdGenerator.class);
 
   //guava cache配置
-  private static long CACHE_SIZE = 10000; // 默认1000个缓存数量
-  private static long CACHE_EXPIRE = 3; // 3
+  private static long CACHE_SIZE = 10000; // 默认缓存数量
+  private static long CACHE_EXPIRE = 3; // 缓存过期时间
 
-  private static final int DEFAULT_BATCH_SIZE = 1000;
+  private static final int DEFAULT_BATCH_SIZE = 1000;//按批次取每次取的数量
 
   private static RedisScript<List<Long>> redisScript = new IdGeneratorRedisScript();
 
@@ -49,19 +47,11 @@ public class DistributedIdGenerator implements IdGenerator {
   private final StringRedisTemplate stringRedisTemplate;
   private final IdDistribution idDistribution;
 
-  private final ConcurrentHashMap<String, RedisResponse> batchSequences = new ConcurrentHashMap<>();
-
-  private LoadingCache<CacheKey, RedisResponse> batchSequencesCache =
+  private Cache<String, RedisResponse> batchSequencesCache =
       CacheBuilder.newBuilder()
           .maximumSize(CACHE_SIZE) // maximum records can be cached
           .expireAfterAccess(CACHE_EXPIRE, TimeUnit.SECONDS) // cache expire time
-          .build(new CacheLoader<CacheKey, RedisResponse>(){ // build the cacheloader
-
-            @Override
-            public RedisResponse load(CacheKey cacheKey) throws Exception {
-              return nextBatchValue(cacheKey.getVersion(), cacheKey.getShardingId(), cacheKey.getSize());
-            }
-          });
+          .build();
 
 
   public DistributedIdGenerator(RedisConnectionFactory connectionFactory,
@@ -89,13 +79,10 @@ public class DistributedIdGenerator implements IdGenerator {
   @Override
   public long nextId(int version, int shardingId) throws Exception {
     String namespaceOfCurrentSeconds = namespace + Instant.now().getEpochSecond();
-    CacheKey cacheKey = new CacheKey(namespaceOfCurrentSeconds, version, shardingId, batchSize);
-    RedisResponse currentBatch = batchSequencesCache.get(cacheKey);
-
-    if (currentBatch.currentBatchSequenceAreUsed()) {
-      batchSequences.computeIfPresent(namespaceOfCurrentSeconds,
-                                      (k, v) -> nextBatchValue(version, shardingId, batchSize));
-      currentBatch = batchSequences.get(namespaceOfCurrentSeconds);
+    RedisResponse currentBatch = batchSequencesCache.getIfPresent(namespaceOfCurrentSeconds);
+    if (currentBatch == null || currentBatch.currentBatchSequenceAreUsed()) {
+      currentBatch = nextBatchValue(version, shardingId, batchSize);
+      batchSequencesCache.put(namespaceOfCurrentSeconds, currentBatch);//会覆盖已有的键值
     }
 
     long sequence = currentBatch.takeOne();
