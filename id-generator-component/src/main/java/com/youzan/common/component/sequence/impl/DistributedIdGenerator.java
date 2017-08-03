@@ -77,7 +77,7 @@ public class DistributedIdGenerator implements IdGenerator {
 
 
   @Override
-  public long nextId(int version, int shardingId) throws Exception {
+  public long nextId(int version, int shardingId) {
     String namespaceOfCurrentSeconds = namespace + Instant.now().getEpochSecond();
     RedisResponse currentBatch = batchSequencesCache.getIfPresent(namespaceOfCurrentSeconds);
     if (currentBatch == null || currentBatch.currentBatchSequenceAreUsed()) {
