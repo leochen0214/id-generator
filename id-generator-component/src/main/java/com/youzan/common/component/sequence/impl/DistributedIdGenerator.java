@@ -15,6 +15,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -23,8 +26,8 @@ import java.util.concurrent.TimeUnit;
  * 分布式id实现，id有5段组成
  *
  * ----------   --------------  -------------------  ------------------  -----------------
- * Sign(1bit)     Version(3bit)   Time(29bit)         Sharding(12bit)     Sequence(19bit)
- * ----------   --------------  -------------------  ------------------  -----------------
+ * Sign(1bit)     Version(3bit)   Time(29bit)         Sharding(12bit)     Sequence(19bit) ----------
+ * --------------  -------------------  ------------------  -----------------
  *
  * @author: clong
  * @date: 2016-11-24
@@ -34,10 +37,10 @@ public class DistributedIdGenerator implements IdGenerator {
   private static final Logger logger = LoggerFactory.getLogger(DistributedIdGenerator.class);
 
   //guava cache配置
-  private static long CACHE_SIZE = 10000; // 默认缓存数量
-  private static long CACHE_EXPIRE = 3; // 缓存过期时间
-
+  private static final long CACHE_SIZE = 10000; // 默认缓存数量
+  private static final long CACHE_EXPIRE = 3; // 缓存过期时间
   private static final int DEFAULT_BATCH_SIZE = 1000;//按批次取每次取的数量
+  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
   private static RedisScript<List<Long>> redisScript = new IdGeneratorRedisScript();
 
@@ -78,16 +81,35 @@ public class DistributedIdGenerator implements IdGenerator {
 
   @Override
   public long nextId(int version, int shardingId) {
+    RedisResponse currentBatch = getRedisResponse(version, shardingId);
+
+    long sequence = currentBatch.takeOne();
+    long seconds = currentBatch.getSeconds();
+    return idDistribution.id(version, seconds, shardingId, sequence);
+  }
+
+  private RedisResponse getRedisResponse(int version, int shardingId) {
     String namespaceOfCurrentSeconds = namespace + Instant.now().getEpochSecond();
     RedisResponse currentBatch = batchSequencesCache.getIfPresent(namespaceOfCurrentSeconds);
     if (currentBatch == null || currentBatch.currentBatchSequenceAreUsed()) {
       currentBatch = nextBatchValue(version, shardingId, batchSize);
       batchSequencesCache.put(namespaceOfCurrentSeconds, currentBatch);//会覆盖已有的键值
     }
+    return currentBatch;
+  }
+
+
+  @Override
+  public String nextId() {
+    RedisResponse currentBatch = getRedisResponse(0, 0);
 
     long sequence = currentBatch.takeOne();
     long seconds = currentBatch.getSeconds();
-    return idDistribution.id(version, seconds, shardingId, sequence);
+
+    String time = LocalDateTime.ofInstant(Instant.ofEpochSecond(seconds), ZoneId.systemDefault())
+        .format(FORMATTER);
+
+    return time + sequence;
   }
 
 

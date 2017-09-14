@@ -15,4 +15,20 @@ public interface IdGenerator {
   long nextId(int version, int shardingId);
 
 
+  /**
+   * 时间+sequence组成
+   * eg: 201709142059586, 201709142059587
+   * @return
+   */
+  String nextId();
+
+  default long nextIdValue(){
+    return Long.parseLong(nextId());
+  }
+
+  default long nextValue() {
+    return nextId(0, 0);
+  }
+
+
 }

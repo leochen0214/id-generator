@@ -39,7 +39,13 @@ public class IdGeneratorTestRestController {
 //    List<DefaultExplainResult> explainResults = orderIds.stream().map(id->IdExplainUtils.explain(id, defaultIdDistribution))
 //        .collect(toList());
 
-    return "orderIds=" + orderIds;
+    List<String> ids = new ArrayList<>();
+    for (int i = 0; i < size; i++) {
+      ids.add(orderIdGenerator.nextId());
+    }
+    System.out.println(ids);
+
+    return "orderIds=" + orderIds +", ids=" + ids;
   }
 
   private List<Long> generateIds(IdGenerator idGenerator, int size) {

@@ -5,16 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.1.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>com.youzan.boot</groupId>
+        <artifactId>youzan-boot-parent</artifactId>
+        <version>1.0.2-SNAPSHOT</version>
     </parent>
     
     <groupId>com.youzan</groupId>
     <artifactId>id-generator</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.2-RELEASE</version>
+    <version>1.0.3-RELEASE</version>
 
     <modules>
         <module>id-generator-web</module>
@@ -29,18 +28,7 @@
     </properties>
 
 
-    <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://maven.qima-inc.com/content/repositories/releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>Nexus Snapshot Repository</name>
-            <url>http://maven.qima-inc.com/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
+
 
 
 </project>

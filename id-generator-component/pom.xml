@@ -5,7 +5,7 @@
     <parent>
         <artifactId>id-generator</artifactId>
         <groupId>com.youzan</groupId>
-        <version>1.0.2-RELEASE</version>
+        <version>1.0.3-RELEASE</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -27,13 +27,11 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.5</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>19.0</version>
         </dependency>
     </dependencies>
 </project>
