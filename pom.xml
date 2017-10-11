@@ -13,7 +13,7 @@
     <groupId>com.youzan</groupId>
     <artifactId>id-generator</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.3-RELEASE</version>
+    <version>1.0.4-RELEASE</version>
 
     <modules>
         <module>id-generator-web</module>
