@@ -51,12 +51,11 @@ if redis.call('EXISTS', lock_key) == 1 then
    return redis.error_reply('Cannot generate ID, waiting for lock to expire.')
 end
 
-redis.pcall('EXPIRE', sequence_key, 600) -- 10min expire, ntp time gap should be less than 10min
-
 --[[
 Increment by a set number, this can
 --]]
 local end_sequence = redis.pcall('INCRBY', sequence_key, size)
+redis.pcall('EXPIRE', sequence_key, 600) -- 10min expire, ntp time gap should be less than 10min
 local start_sequence = end_sequence - size + 1
 if end_sequence >= max_sequence then
     redis.log(redis.LOG_WARNING, 'Rolling sequence back to the start, locking for 1s.')
@@ -77,7 +76,7 @@ return {
   <dependency>
             <groupId>com.youzan</groupId>
             <artifactId>id-generator-component</artifactId>
-             <version>1.0.1-RELEASE</version>
+             <version>1.0.4-RELEASE</version>
 </dependency>
 ```
 
